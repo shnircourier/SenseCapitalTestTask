@@ -6,7 +6,7 @@ public class User
 
     public string Username { get; set; }
 
-    public string Password { get; set; }
+    public byte[] Password { get; set; }
 
-    public string PasswordSalt { get; set; }
+    public byte[] PasswordSalt { get; set; }
 }

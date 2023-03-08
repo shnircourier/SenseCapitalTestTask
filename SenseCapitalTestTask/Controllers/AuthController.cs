@@ -1,8 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using BusinessLogic.Services.AuthService;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using SenseCapitalTestTask.Requests;
 using Shared.Entities;
 
 namespace SenseCapitalTestTask.Controllers;
@@ -12,31 +14,63 @@ namespace SenseCapitalTestTask.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IConfiguration _config;
+    private readonly IAuthService _authService;
 
-    public AuthController(IConfiguration config)
+    public AuthController(IConfiguration config, IAuthService authService)
     {
         _config = config;
+        _authService = authService;
     }
 
     [HttpPost]
-    [Route("login")]
-    public async Task<ActionResult<string>> LogIn()
+    [Route("LogIn")]
+    public async Task<ActionResult<string>> LogIn(UserRequest request)
     {
-        return Ok("dasdasdasd");
+        try
+        {
+            var username = await _authService.Login(new User
+            {
+                Password = Encoding.UTF8.GetBytes(request.Password),
+                Username = request.Username
+            });
+            
+            var token = CreateToken(username);
+            
+            return Ok(token);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPost]
-    [Route("register")]
-    public async Task<ActionResult<string>> Register()
+    [Route("Register")]
+    public async Task<ActionResult<string>> Register(UserRequest request)
     {
+        try
+        {
+            var username = await _authService.Register(new User
+            {
+                Password = Encoding.UTF8.GetBytes(request.Password),
+                Username = request.Username
+            });
+
+            var token = CreateToken(username);
+            
+            return Ok(token);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
         
         
-        return Ok("sdadsad");
     }
 
-    private string CreateToken(User user)
+    private string CreateToken(string username)
     {
-        var claims = new List<Claim> { new Claim(ClaimTypes.Name, user.Username) };
+        var claims = new List<Claim> { new Claim(ClaimTypes.Name, username) };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:Secret"]));
 
