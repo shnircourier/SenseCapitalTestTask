@@ -61,6 +61,11 @@ public class GameSessionsController : ControllerBase
     {
         var gameSession = await _gameSessionService.Get(request.SessionId);
 
+        if (gameSession.SecondPlayerId == null)
+        {
+            return BadRequest("Вы не можете походить пока отсутсвует 2-й игрок");
+        }
+
         var user = await GetAuthorizeUser();
 
         if (gameSession.IsGameEnded)
