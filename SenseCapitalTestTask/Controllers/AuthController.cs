@@ -22,7 +22,7 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    [HttpPost("login")]
+    [HttpPost("Login")]
     public async Task<ActionResult<string>> LogIn(AuthRequest request)
     {
         try
@@ -43,7 +43,7 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("register")]
+    [HttpPost("Register")]
     public async Task<ActionResult<string>> Register(AuthRequest request)
     {
         try
