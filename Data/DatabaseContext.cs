@@ -7,6 +7,10 @@ namespace Data;
 public class DatabaseContext : DbContext
 {
     public DbSet<User> Users { get; set; }
+
+    public DbSet<Player> Players { get; set; }
+
+    public DbSet<GameSession> GameSessions { get; set; }
     
     public DatabaseContext(DbContextOptions opts) : base(opts) { }
 

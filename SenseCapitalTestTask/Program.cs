@@ -1,10 +1,14 @@
 using System.Text;
 using BusinessLogic.Services.AuthService;
+using BusinessLogic.Services.GameSessionService;
+using BusinessLogic.Services.UserService;
 using Data;
+using Data.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Shared.Entities;
 using Swashbuckle.AspNetCore.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +45,9 @@ builder.Services.AddDbContext<DatabaseContext>(opts =>
     opts.UseSqlServer(builder.Configuration["ConnectionString"]));
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IGameSessionService, GameSessionService>();
+builder.Services.AddScoped<IRepository<GameSession>, GameSessionRepository>();
 
 var app = builder.Build();
 

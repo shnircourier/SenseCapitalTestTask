@@ -22,9 +22,8 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    [HttpPost]
-    [Route("LogIn")]
-    public async Task<ActionResult<string>> LogIn(UserRequest request)
+    [HttpPost("login")]
+    public async Task<ActionResult<string>> LogIn(AuthRequest request)
     {
         try
         {
@@ -44,9 +43,8 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost]
-    [Route("Register")]
-    public async Task<ActionResult<string>> Register(UserRequest request)
+    [HttpPost("register")]
+    public async Task<ActionResult<string>> Register(AuthRequest request)
     {
         try
         {

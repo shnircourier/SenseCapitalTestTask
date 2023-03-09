@@ -40,10 +40,10 @@ public class AuthService : IAuthService
             throw new Exception("Пользователь с таким именем уже существует");
         }
         
-        var passwordHash = CreatePasswordHash(user.Password);
+        CreatePasswordHash(user.Password, out var passwordHash, out var passwordSalt);
 
-        user.Password = passwordHash.PasswordHash;
-        user.PasswordSalt = passwordHash.PasswordSalt;
+        user.Password = passwordHash;
+        user.PasswordSalt = passwordHash;
 
         var newUser = await _context.Users.AddAsync(user);
 
@@ -57,17 +57,13 @@ public class AuthService : IAuthService
         return _context.Users.AnyAsync(u => u.Username.Equals(username));
     }
 
-    private PasswordData CreatePasswordHash(byte[] password)
+    private void CreatePasswordHash(byte[] password, out byte[] passwordHash, out byte[] passwordSalt)
     {
         using var hmac = new HMACSHA512();
 
-        var result = new PasswordData
-        {
-            PasswordSalt = hmac.Key,
-            PasswordHash = hmac.ComputeHash(password)
-        };
+        passwordHash = hmac.ComputeHash(password);
 
-        return result;
+        passwordSalt = hmac.Key;
     }
 
     private bool VerifyPasswordHash(User user, byte[] password)
@@ -80,11 +76,4 @@ public class AuthService : IAuthService
 
         return res;
     }
-}
-
-internal class PasswordData
-{
-    public byte[] PasswordHash { get; set; }
-
-    public byte[] PasswordSalt { get; set; }
 }
