@@ -34,19 +34,24 @@ public class GameSessionsController : ControllerBase
     {
         var response = await _gameSessionService.Get(id);
 
+        if (response is null)
+        {
+            return NotFound("Сессия не найдена");
+        }
+
         return Ok(response);
     }
 
     [HttpPost]
     public async Task<ActionResult<GameSession>> CreateSession(CreateGameSessionRequest request)
     {
-        var player = new Player
+        var gameSession = new GameSession
         {
-            Side = request.PlayerSide,
-            User = await GetAuthorizeUser()
+            FirstPlayerSide = request.PlayerSide,
+            FirstPlayerId = (await GetAuthorizeUser()).Id
         };
 
-        var response = await _gameSessionService.CreateSession(player);
+        var response = await _gameSessionService.CreateSession(gameSession);
         
         return Ok(response);
     }
@@ -63,9 +68,9 @@ public class GameSessionsController : ControllerBase
             return BadRequest("Игра завершена");
         }
 
-        if (gameSession.PlayerTurn.UserId != user.Id)
+        if (gameSession.PlayerTurnId != user.Id)
         {
-            return BadRequest($"Сейчас ход игрока #{gameSession.PlayerTurn.User.Username}");
+            return BadRequest($"Сейчас ход игрока #{gameSession.PlayerTurnId}");
         }
 
         try
@@ -87,12 +92,12 @@ public class GameSessionsController : ControllerBase
         
         var user = await GetAuthorizeUser();
 
-        if (gameSession.FirstPlayer.UserId == user.Id || gameSession.SecondPlayer?.UserId == user.Id)
+        if (gameSession.FirstPlayerId == user.Id || gameSession.SecondPlayerId == user.Id)
         {
             return BadRequest("Вы уже в сессии");
         }
 
-        if (gameSession.SecondPlayer is not null)
+        if (gameSession.SecondPlayerId is not null)
         {
             return BadRequest("Сессия заполнена");
         }

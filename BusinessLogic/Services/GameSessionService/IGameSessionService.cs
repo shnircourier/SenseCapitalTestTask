@@ -8,7 +8,7 @@ public interface IGameSessionService
 
     Task<GameSession> Get(int sessionId);
 
-    Task<GameSession> CreateSession(Player player);
+    Task<GameSession> CreateSession(GameSession gameSession);
 
     Task<GameSession> MakeMove(GameSession gameSession, int x, int y, int userId);
 

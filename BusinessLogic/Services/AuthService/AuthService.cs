@@ -43,7 +43,7 @@ public class AuthService : IAuthService
         CreatePasswordHash(user.Password, out var passwordHash, out var passwordSalt);
 
         user.Password = passwordHash;
-        user.PasswordSalt = passwordHash;
+        user.PasswordSalt = passwordSalt;
 
         var newUser = await _context.Users.AddAsync(user);
 

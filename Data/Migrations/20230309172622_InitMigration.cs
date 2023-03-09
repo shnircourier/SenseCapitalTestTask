@@ -11,6 +11,26 @@ namespace Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "GameSessions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FirstPlayerId = table.Column<int>(type: "int", nullable: false),
+                    FirstPlayerSide = table.Column<int>(type: "int", nullable: false),
+                    SecondPlayerId = table.Column<int>(type: "int", nullable: true),
+                    SecondPlayerSide = table.Column<int>(type: "int", nullable: false),
+                    PlayerTurnId = table.Column<int>(type: "int", nullable: true),
+                    IsGameEnded = table.Column<bool>(type: "bit", nullable: false),
+                    WinnerId = table.Column<int>(type: "int", nullable: true),
+                    GameBoard = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GameSessions", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -35,6 +55,9 @@ namespace Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "GameSessions");
+
             migrationBuilder.DropTable(
                 name: "Users");
         }

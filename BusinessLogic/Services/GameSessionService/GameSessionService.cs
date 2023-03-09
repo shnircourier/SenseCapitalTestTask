@@ -1,3 +1,4 @@
+using BusinessLogic.Helpers;
 using Data;
 using Shared.Entities;
 using Shared.Enums;
@@ -23,28 +24,39 @@ public class GameSessionService : IGameSessionService
         return await _repository.Get(sessionId);
     }
 
-    public async Task<GameSession> CreateSession(Player player)
+    public async Task<GameSession> CreateSession(GameSession gameSession)
     {
-        var gameSession = new GameSession
+        var newBoard = new[]
         {
-            FirstPlayer = player,
-            GameBoard = new[]
-            {
-                new[] { CellStatus.Empty, CellStatus.Empty, CellStatus.Empty },
-                new[] { CellStatus.Empty, CellStatus.Empty, CellStatus.Empty },
-                new[] { CellStatus.Empty, CellStatus.Empty, CellStatus.Empty }
-            }
+            new[] { CellStatus.Empty, CellStatus.Empty, CellStatus.Empty },
+            new[] { CellStatus.Empty, CellStatus.Empty, CellStatus.Empty },
+            new[] { CellStatus.Empty, CellStatus.Empty, CellStatus.Empty }
         };
+
+        gameSession.GameBoard = StringHelper.GetStringFromBoard(newBoard);
 
         return await _repository.Create(gameSession);
     }
 
     public async Task<GameSession> MakeMove(GameSession gameSession, int x, int y, int userId)
     {
-        var value = gameSession.PlayerTurn.Side == PlayerSide.Crosses ? CellStatus.Cross : CellStatus.Zero;
+        var userSide = gameSession.FirstPlayerId == userId && gameSession.PlayerTurnId == userId
+            ? gameSession.FirstPlayerSide
+            : gameSession.SecondPlayerSide;
+        
+        var value = userSide == PlayerSide.Crosses ? CellStatus.Cross : CellStatus.Zero;
         
         var newBoard = ChangeCellValue(gameSession.GameBoard, x, y, value);
 
+        if (IsGameEnd(newBoard, value))
+        {
+            gameSession.IsGameEnded = true;
+            gameSession.GameBoard = newBoard;
+            gameSession.WinnerId = gameSession.PlayerTurnId;
+            
+            return await _repository.Update(gameSession);
+        }
+        
         if (IsDraw(newBoard))
         {
             gameSession.IsGameEnded = true;
@@ -53,55 +65,45 @@ public class GameSessionService : IGameSessionService
             return await _repository.Update(gameSession);
         }
 
-        if (IsGameEnd(newBoard, value))
-        {
-            gameSession.IsGameEnded = true;
-            gameSession.GameBoard = newBoard;
-            gameSession.Winner = gameSession.PlayerTurn;
-            
-            return await _repository.Update(gameSession);
-        }
-
         gameSession.GameBoard = newBoard;
-        gameSession.PlayerTurn = gameSession.FirstPlayer.UserId == gameSession.PlayerTurn.UserId
-            ? gameSession.SecondPlayer
-            : gameSession.FirstPlayer;
+        gameSession.PlayerTurnId = gameSession.FirstPlayerId == gameSession.PlayerTurnId
+            ? gameSession.SecondPlayerId
+            : gameSession.FirstPlayerId;
         
         return await _repository.Update(gameSession);
-
     }
 
     public async Task<GameSession> JoinToSession(int sessionId, int userId)
     {
         var gameSession = await _repository.Get(sessionId);
 
-        if (gameSession.FirstPlayer.UserId == userId)
+        if (gameSession.FirstPlayerId == userId)
         {
             throw new Exception("Игрок уже в сессии");
         }
 
-        gameSession.SecondPlayer = new Player
-        {
-            UserId = userId,
-            Side = gameSession.FirstPlayer.Side == PlayerSide.Crosses ? PlayerSide.Zeroes : PlayerSide.Crosses
-        };
-        gameSession.PlayerTurn = gameSession.FirstPlayer.Side == PlayerSide.Crosses
-            ? gameSession.FirstPlayer
-            : gameSession.SecondPlayer;
+        gameSession.SecondPlayerId = userId;
+        gameSession.SecondPlayerSide = gameSession.FirstPlayerSide == PlayerSide.Crosses ? PlayerSide.Zeroes : PlayerSide.Crosses;
+        
+        gameSession.PlayerTurnId = gameSession.FirstPlayerSide == PlayerSide.Crosses
+            ? gameSession.FirstPlayerId
+            : gameSession.SecondPlayerId;
 
         return await _repository.Update(gameSession);
     }
 
-    private CellStatus[][] ChangeCellValue(CellStatus[][] board, int x, int y, CellStatus value)
+    private string ChangeCellValue(string board, int x, int y, CellStatus value)
     {
-        if (board[x][y] == CellStatus.Empty)
+        var newBoard = StringHelper.GetBoardFromString(board);
+        
+        if (newBoard[x][y] == CellStatus.Empty)
         {
-            board[x][y] = value;
+            newBoard[x][y] = value;
 
-            return board;
+            return StringHelper.GetStringFromBoard(newBoard);
         }
 
-        if (board[x][y] == value)
+        if (newBoard[x][y] == value)
         {
             throw new Exception("Данная ячейка уже вами занята");
         }
@@ -109,24 +111,28 @@ public class GameSessionService : IGameSessionService
         throw new Exception("Данная ячейка уже занята вашим оппонентом");
     }
 
-    private bool IsDraw(CellStatus[][] board)
+    private bool IsDraw(string board)
     {
-        return !board.Any(i => i.Any(j => j == CellStatus.Empty));
+        var boardFromStr = StringHelper.GetBoardFromString(board);
+        
+        return !boardFromStr.Any(i => i.Any(j => j == CellStatus.Empty));
     }
 
-    private bool IsGameEnd(CellStatus[][] board, CellStatus value)
+    private bool IsGameEnd(string board, CellStatus value)
     {
-        var firstExp = board.Aggregate(false, (current, i) => current | i.All(j => j == value));
-
-        var secondExp = board.Aggregate(false, (current, b) => current & b[0] == value);
+        var boardFromStr = StringHelper.GetBoardFromString(board);
         
-        var thirdExp = board.Aggregate(false, (current, b) => current & b[1] == value);
+        var firstExp = boardFromStr.Aggregate(false, (current, i) => current | i.All(j => j == value));
+
+        var secondExp = boardFromStr.Aggregate(false, (current, b) => current & b[0] == value);
         
-        var fourthExp = board.Aggregate(false, (current, b) => current & b[2] == value);
+        var thirdExp = boardFromStr.Aggregate(false, (current, b) => current & b[1] == value);
+        
+        var fourthExp = boardFromStr.Aggregate(false, (current, b) => current & b[2] == value);
 
-        var fifthExp = board[0][0] == value && board[1][1] == value && board[2][2] == value;
+        var fifthExp = boardFromStr[0][0] == value && boardFromStr[1][1] == value && boardFromStr[2][2] == value;
 
-        var sixthExp = board[0][2] == value && board[1][1] == value && board[2][0] == value;
+        var sixthExp = boardFromStr[0][2] == value && boardFromStr[1][1] == value && boardFromStr[2][0] == value;
 
         return firstExp || secondExp || thirdExp || fourthExp || fifthExp || sixthExp;
     }
